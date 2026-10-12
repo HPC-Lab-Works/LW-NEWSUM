@@ -54,8 +54,8 @@ data/raw/                  Indian News corpus (raw), cleaned at load time
 Python 3.10 or later and a CUDA GPU are required for the full experiments; the smoke test runs on CPU.
 
 ```bash
-git clone https://github.com/HPC-Lab-Works/lw-newsum.git
-cd lw-newsum
+git clone https://github.com/HPC-Lab-Works/LW-NEWSUM.git
+cd LW-NEWSUM
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -c "import nltk; [nltk.download(p) for p in ('punkt', 'punkt_tab', 'wordnet', 'omw-1.4')]"
