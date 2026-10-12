@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the article below."
+title: "LW-NEWSUM: code for post-hoc encoder refinement of fine-tuned news summarizers"
+authors:
+  - family-names: Kumar
+    given-names: Himanshu
+  - family-names: Jain
+    given-names: V. K.
+  - family-names: Kumar
+    given-names: Vivek
+    orcid: "https://orcid.org/0000-0001-8868-335X"
+    email: vivek.kumar@bennett.edu.in
+license: MIT
+repository-code: "https://github.com/HPC-Lab-Works/lw-newsum"
+preferred-citation:
+  type: article
+  title: "Post-hoc Encoder Refinement of Fine-Tuned News Summarizers: A Controlled Study of the Lightweight Local-Global Module LW-NEWSUM"
+  authors:
+    - family-names: Kumar
+      given-names: Himanshu
+    - family-names: Jain
+      given-names: V. K.
+    - family-names: Kumar
+      given-names: Vivek
+  year: 2026
+  status: submitted

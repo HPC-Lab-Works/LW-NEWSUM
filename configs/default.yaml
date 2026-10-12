@@ -1,0 +1,147 @@
+# LW-NEWSUM v2 default experimental configuration.
+# Every value here is reported in the manuscript (Table: implementation details).
+
+paths:
+  output_dir: outputs            # predictions, checkpoints, metrics, logs
+  cache_dir: null                # Hugging Face cache (null = default)
+  indian_news_jsonl: data/raw/indian-news-2024-2025-summarization.jsonl
+
+# Pretrained checkpoints (Hugging Face hub ids). A dict maps dataset -> checkpoint.
+backbones:
+  t5: t5-small                                   # 60.5M, Raffel et al. 2020
+  flant5: google/flan-t5-small                   # 77M, Chung et al. 2024 (JMLR)
+  bartbase: facebook/bart-base                   # 139M, Lewis et al. 2020
+  distilbart:                                    # 306M, Shleifer and Rush 2020
+    cnndm: sshleifer/distilbart-cnn-12-6
+    xsum: sshleifer/distilbart-xsum-12-6
+    xlsum: sshleifer/distilbart-xsum-12-6
+    multinews: sshleifer/distilbart-cnn-12-6
+    indian: sshleifer/distilbart-cnn-12-6
+  qwen25_05b: Qwen/Qwen2.5-0.5B-Instruct         # Qwen Team 2024
+  qwen25_15b: Qwen/Qwen2.5-1.5B-Instruct
+  smollm2_17b: HuggingFaceTB/SmolLM2-1.7B-Instruct   # Allal et al. 2025
+  llama32_1b: meta-llama/Llama-3.2-1B-Instruct   # gated: requires accepting the licence and HF_TOKEN
+seeds: [13, 42, 87]
+
+datasets:
+  cnndm:
+    hf_name: abisee/cnn_dailymail
+    hf_config: 3.0.0
+    source_field: article
+    target_field: highlights
+    max_source_len: 512
+    max_target_len: 128
+    gen: {num_beams: 4, max_new_tokens: 128, min_new_tokens: 30, length_penalty: 2.0, no_repeat_ngram_size: 3}
+    slm_instruction: "Summarise the following news article in three to four short sentences that state its key facts. Output only the summary."
+    max_train_samples: null      # null = full official training split (287,113)
+    max_eval_samples: null       # null = full official test split (11,490)
+  xsum:
+    hf_name: EdinburghNLP/xsum
+    hf_config: null
+    source_field: document
+    target_field: summary
+    max_source_len: 512
+    max_target_len: 64
+    gen: {num_beams: 4, max_new_tokens: 64, min_new_tokens: 10, length_penalty: 1.0, no_repeat_ngram_size: 3}
+    slm_instruction: "Summarise the following news article in exactly one sentence. Output only the summary."
+    max_train_samples: null
+    max_eval_samples: null
+  xlsum:                         # XL-Sum English (BBC, 2021): Hasan et al., Findings of ACL 2021
+    hf_name: csebuetnlp/xlsum
+    hf_config: null
+    hf_data_dir: english         # parquet conversion stores each language in its own folder
+    hf_revision: refs/convert/parquet   # the hub repo is script-based; use its parquet conversion
+    source_field: text
+    target_field: summary
+    max_source_len: 512
+    max_target_len: 64
+    gen: {num_beams: 4, max_new_tokens: 64, min_new_tokens: 10, length_penalty: 1.0, no_repeat_ngram_size: 3}
+    slm_instruction: "Summarise the following news article in one or two sentences. Output only the summary."
+    max_train_samples: null
+    max_eval_samples: null
+  multinews:                     # Multi-News (multi-document, long): Fabbri et al., ACL 2019
+    hf_name: alexfabbri/multi_news
+    hf_config: null
+    hf_revision: refs/convert/parquet   # the hub repo is script-based; parquet conversion branch
+    local_dir: null              # fallback: folder with {train,val,test}.src / .tgt from the official release
+    source_field: document
+    target_field: summary
+    source_sep: "|||||"
+    max_source_len: 1024         # longer inputs: tests whether document-level context helps
+    gen_batch_size: 16           # long inputs and outputs: smaller generation batches
+    max_target_len: 256
+    gen: {num_beams: 4, max_new_tokens: 256, min_new_tokens: 100, length_penalty: 2.0, no_repeat_ngram_size: 3}
+    slm_instruction: "The following text contains several news articles about the same event, separated by |||||. Write one coherent summary of about 250 words. Output only the summary."
+    max_train_samples: null
+    max_eval_samples: null
+  indian:
+    local: true                  # cleaned, deduplicated, re-split locally (seeded)
+    max_source_len: 512
+    max_target_len: 128
+    min_source_words: 40         # drop fragments
+    max_compression: 0.9         # drop pairs whose summary is >=90% of the article length
+    split: [0.8, 0.1, 0.1]
+    gen: {num_beams: 4, max_new_tokens: 128, min_new_tokens: 20, length_penalty: 1.0, no_repeat_ngram_size: 3}
+    slm_instruction: "Summarise the following Indian news article in three to four short sentences that state its key facts. Output only the summary."
+    max_train_samples: null
+    max_eval_samples: null
+
+# Module hyper-parameters (Section 4). Defaults define the full LW-NEWSUM.
+lwnewsum:
+  bottleneck_dim: 256
+  n_heads: 4
+  ffn_dim: 512
+  local_layers: 2
+  global_layers: 1
+  dropout: 0.1
+  local_window: 32               # tokens; banded self-attention |i-j| <= window/2
+  topology: sequential           # sequential (Z->L->G) | parallel (Z->L, Z->G)
+  positional_encoding: true      # sinusoidal PE added in the bottleneck space
+  fusion: concat                 # concat | mean | local_only | global_only
+  residual: learned              # learned alpha | fixed (alpha = 1)
+  alpha_init: 0.1
+
+train:
+  optimizer: adamw
+  lr_module: 1.0e-3              # LW-NEWSUM / adapter / LoRA parameters
+  lr_full: 3.0e-4                # full fine-tuning of T5-Small
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  scheduler: linear
+  epochs: 3
+  per_device_batch_size: 16
+  grad_accum: 2                  # effective batch 32
+  max_grad_norm: 1.0
+  bf16: true                     # H200: bfloat16 autocast
+  eval_every_steps: 2000         # validation loss for checkpoint selection
+  max_val_samples: 2000          # validation subset used for loss-based selection
+  early_stopping_patience: 3     # evaluations without improvement
+  num_workers: 4
+
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.05
+  target_modules: [q, k, v, o]
+
+ia3:
+  target_modules: [k, v, wo]
+  feedforward_modules: [wo]
+
+mlp_adapter:
+  bottleneck_dim: 1920           # used only if match_lwnewsum is false
+  match_lwnewsum: true           # width set to match the LW-NEWSUM size per backbone (1,920 for T5-Small, 1,344 for BART-base)
+
+eval:
+  gen_batch_size: 64
+  bertscore_model: roberta-large
+  bertscore_rescale: true
+  factuality_subset: 2000        # seeded random subset of test documents for NLI metrics
+  nli_model: facebook/bart-large-mnli
+  nli_threshold: 0.5
+  nli_chunk_tokens: 400
+  bootstrap_samples: 10000
+  bootstrap_seed: 42
+  efficiency_docs: 200
+  slm_batch_size: 16
+  slm_max_article_tokens: 1024

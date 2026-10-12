@@ -1,0 +1,20 @@
+# Tested combination (Oct 2026). torch is NOT pinned: use the NVIDIA container's build.
+transformers==5.17.0
+peft==0.21.1
+accelerate==1.15.0
+tokenizers==0.23.2
+huggingface_hub==1.33.0
+safetensors==0.8.0
+datasets>=3.0
+rouge-score==0.1.2
+sacrebleu==2.6.0
+nltk==3.10.3
+bert-score==0.3.13
+sentencepiece==0.2.2
+scikit-learn>=1.4
+networkx>=3.2
+numpy>=1.26
+scipy>=1.11
+pyyaml>=6.0
+matplotlib>=3.8
+protobuf>=4.25
