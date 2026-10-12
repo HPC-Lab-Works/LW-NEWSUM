@@ -11,7 +11,7 @@ authors:
     orcid: "https://orcid.org/0000-0001-8868-335X"
     email: vivek.kumar@bennett.edu.in
 license: MIT
-repository-code: "https://github.com/HPC-Lab-Works/lw-newsum"
+repository-code: "https://github.com/HPC-Lab-Works/LW-NEWSUM"
 preferred-citation:
   type: article
   title: "Post-hoc Encoder Refinement of Fine-Tuned News Summarizers: A Controlled Study of the Lightweight Local-Global Module LW-NEWSUM"
